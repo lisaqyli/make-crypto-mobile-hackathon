@@ -66,3 +66,13 @@ _site
 vendor
 _config.gh-pages.yml
 Gemfile.lock
+
+node_modules
+.env
+coverage
+coverage.json
+typechain
+
+#Hardhat files
+cache
+artifacts
