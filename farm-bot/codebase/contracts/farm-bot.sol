@@ -5,17 +5,27 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "hardhat/console.sol";
 
 contract FarmBot {
-    address public owner;
+    mapping(address => uint256) private _balances;
 
-    constructor(address _owner) {
-        console.log("Deploying a FarmBot with owner:", _owner);
-        owner = _owner;
+    address public tokenAddress;
+
+    constructor(address _tokenAddress) {
+        console.log("Deploying a FarmBot with token:", _tokenAddress);
+        tokenAddress = _tokenAddress;
     }
 
-    // deposits can be done without a dedicated method (just send funds to the contract address)
+    function deposit(uint256 amount) public {
+        // todo might need a lock on this
+        bool transferSuccess = IERC20(tokenAddress).transferFrom(msg.sender, address(this), amount);
+        require(transferSuccess, "Transfer failed, aborting deposit");
+        _balances[msg.sender] += amount;
+    }
 
-    function withdraw(address token, uint256 amount) public {
-        require(msg.sender == owner, "Only the owner can withdraw");
-        IERC20(token).transfer(msg.sender, amount);
+    function withdraw(uint256 amount) public {
+        // todo might need a lock on this
+        require(_balances[msg.sender] >= amount, "Only the owner can withdraw");
+        bool transferSuccess = IERC20(tokenAddress).transfer(msg.sender, amount);
+        require(transferSuccess, "Transfer failed, aborting withdrawal");
+        _balances[msg.sender] -= amount;
     }
 }
