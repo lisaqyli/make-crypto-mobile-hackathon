@@ -183,7 +183,7 @@ contract FarmBot {
         // to claim at the beginning of this function, since we MUST claim for all users before changing
         // the amount of LP staked in the farm to avoid time-related prorating issues.
 
-	// I think we can safely roll this into the above loop.
+        // I think we can safely roll this into the above loop.
         for (uint i=0; i<_users.length; i++) {
             // Same check as above. The require in stakeLPForAddress will throw without this. This check also
             // enforces the semantics of "no staked LP" => "do not compound any rewards I might have".
