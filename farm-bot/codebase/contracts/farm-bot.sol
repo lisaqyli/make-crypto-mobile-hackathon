@@ -1,9 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.9.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "hardhat/console.sol";
-import "./ubeswap-farming/StakingRewards.sol";
+import "./ubeswap-farming/contracts/StakingRewards.sol"; // does the ierc20 import too
 
 contract FarmBot {
     mapping(address => uint256) private _balances;
@@ -31,6 +30,6 @@ contract FarmBot {
         uint256 tokenBalance = IERC20(tokenAddress).balanceOf(address(this));
         require(tokenBalance > 0, "Cannot invest in farm because tokenBalance is 0");
         IERC20(tokenAddress).approve(address(farm), tokenBalance);
-        farm.stake(tokenBalance);
+        farm.stake(tokenBalance); // fixme compilation error: TypeError: Member "stake" not found or not visible after argument-dependent lookup in address.
     }
 }

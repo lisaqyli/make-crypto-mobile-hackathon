@@ -9,7 +9,7 @@ import "../../openzeppelin-solidity/contracts/SafeERC20.sol";
 import "../../openzeppelin-solidity/contracts/ReentrancyGuard.sol";
 
 // Inheritance
-import "./interfaces/IStakingRewards.sol";
+import "../interfaces/IStakingRewards.sol";
 import "./RewardsDistributionRecipient.sol";
 
 
