@@ -115,9 +115,6 @@ contract FarmBot {
         }
     }
 
-    // Public wrapper for claiming user rewards.
-    function claimAll() public claim {}
-
     // Stakes all LP for a given address. Used internally when compounding rewards.
     function stakeLPForAddress(address _address) private {
         require(_balances[_address] >= 0, "Must have non-zero balance to stake");
