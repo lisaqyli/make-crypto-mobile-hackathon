@@ -27,8 +27,8 @@ contract FarmBot {
     IUniswapV2Pair public stakingToken;    // Staked token for farming (UBE LP token)
     IUniswapV2Router public router;        // Ubeswap Router
 
-    IERC20 public token0;                  // UBE LP tokenA
-    IERC20 public token1;                  // UBE LP tokenB
+    IERC20 public token0;                  // UBE LP token0
+    IERC20 public token1;                  // UBE LP token1
 
     address[] public path0;                // Path to route rewardsToken to token0 when compounding
     address[] public path1;                // Path to route rewardsToken to token1 when compounding
