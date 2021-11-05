@@ -37,13 +37,13 @@ contract FarmBot {
 
     constructor(address _stakingRewards, address _router, address[] _path0, address[] _path1) {
         stakingRewards = IERC20(_stakingRewards);
-	rewardsToken = IERC20(stakingRewards.rewardsToken);
-	stakingToken = IUniswapV2Pair(stakingRewards.stakingToken);
-	token0 = IERC20(stakingToken.token0);
-	token1 = IERC20(stakingToken.token1);
-	path0 = _pathA;
-	path1 = _pathB;
-	router = IUniswapV2Router(_router)
+        rewardsToken = IERC20(stakingRewards.rewardsToken);
+        stakingToken = IUniswapV2Pair(stakingRewards.stakingToken);
+        token0 = IERC20(stakingToken.token0);
+        token1 = IERC20(stakingToken.token1);
+        path0 = _pathA;
+        path1 = _pathB;
+        router = IUniswapV2Router(_router)
     }
 
     /* Autocompounding multi-user farm. Since all LP tokens from all users will be
@@ -63,9 +63,9 @@ contract FarmBot {
         bool transferSuccess = stakingToken.transferFrom(msg.sender, address(this), amount);
         require(transferSuccess, "Transfer failed, aborting deposit");
         _balances[msg.sender] += amount;
-	if (!(_userExists[msg.sender])) {
-	    _users.push(msg.sender)
-	}
+        if (!(_userExists[msg.sender])) {
+            _users.push(msg.sender)
+        }
     }
 
     // Withdraw LP token from contract.
@@ -78,33 +78,33 @@ contract FarmBot {
 
     // Stake all LP token into farm for one user. Before staking, we need to claim everyone's rewards.
     function stakeLP() public claim {
-	stakeLPForAddress(msg.sender)
+        stakeLPForAddress(msg.sender)
     }
 
     // Unstake all LP token from farm for one user. Before unstaking, we need to claim everyone's rewards.
     function unstakeLP() public claim {
         require(_stakedBalances[msg.sender] >= 0, "Must have non-zero staked balance to unstake");
-	stakingToken.withdraw(_stakedBalances[msg.sender]);
-	totalStaked -= _stakedBalances[msg.sender];
-	_balances[msg.sender] += _stakedBalances[msg.sender]
-	_stakedBalances[msg.sender] = 0;
-	// We disable compounding for this user's rewards when they unstake, so that future calls to
-	// compound do not reinvest any rewards that this user may have claimed.
-	_compound[msg.sender] = false;
+        stakingToken.withdraw(_stakedBalances[msg.sender]);
+        totalStaked -= _stakedBalances[msg.sender];
+        _balances[msg.sender] += _stakedBalances[msg.sender]
+        _stakedBalances[msg.sender] = 0;
+        // We disable compounding for this user's rewards when they unstake, so that future calls to
+        // compound do not reinvest any rewards that this user may have claimed.
+        _compound[msg.sender] = false;
     }
 
     // Claims all rewards for all users in the farm.
     modifier claim {
-	uint256 rewards = stakingRewards.rewards(address(this));
-	if (rewards > 0) {
-	    stakingRewards.getReward();
-	    totalRewards += rewards
-	    for (uint i=0; i<_users.length; i++) {
-		// Allocate a fraction of the claims rewardsToken to each user proportional
-		// to their current share of the staked LP.
-		_rewards[_users[i]] = (_stakedBalances[_users[i]] * rewards) / totalStaked;
-	    }
-	}
+        uint256 rewards = stakingRewards.rewards(address(this));
+        if (rewards > 0) {
+            stakingRewards.getReward();
+            totalRewards += rewards
+            for (uint i=0; i<_users.length; i++) {
+                // Allocate a fraction of the claims rewardsToken to each user proportional
+                // to their current share of the staked LP.
+                _rewards[_users[i]] = (_stakedBalances[_users[i]] * rewards) / totalStaked;
+            }
+        }
     }
 
     // Public wrapper for claiming user rewards.
@@ -113,48 +113,48 @@ contract FarmBot {
     // Stakes all LP for a given address. Used internally when compounding rewards.
     function stakeLPForAddress(address _address) private {
         require(_balances[_address] >= 0, "Must have non-zero balance to stake");
-	stakingToken.stake(amount);
-	require(transferSuccess, "Transfer failed, aborting withdrawal");
-	_stakedBalance[_address] += _balances[_address];
-	totalStaked += _balances[_address]
-	_balances[_address] = 0;
-	// Enable compounding for this user, since they're now staking LP.
-	_compound[_address] = true;
+        stakingToken.stake(amount);
+        require(transferSuccess, "Transfer failed, aborting withdrawal");
+        _stakedBalance[_address] += _balances[_address];
+        totalStaked += _balances[_address]
+        _balances[_address] = 0;
+        // Enable compounding for this user, since they're now staking LP.
+        _compound[_address] = true;
     }
 
     // Compounds rewards for all users. Converts all rewardsToken held by the contract into
     // equal parts token0 and token1, exchanges for LP token, and stakes proportional LP for each user.
     function compound() public claim {
-	// THE FOLLOWING IS PSEUDOCODE! the contract calls are much more complicated than this and
-	// require additional bookkeeping/arguments/contract calls to work correctly.
+        // THE FOLLOWING IS PSEUDOCODE! the contract calls are much more complicated than this and
+        // require additional bookkeeping/arguments/contract calls to work correctly.
 
-	// Split rewards in half
-	uint256 halfRewards = totalRewards / 2;
+        // Split rewards in half
+        uint256 halfRewards = totalRewards / 2;
 
-	// Swap for token0
-	uint256 amountToken0 = router.swapTokensForExactTokens(halfRewards, path0, address(this));
-	// Swap for token1
-	uint256 amountToken1 = router.swapTokensForExactTokens(halfRewards, path1, address(this));
+        // Swap for token0
+        uint256 amountToken0 = router.swapTokensForExactTokens(halfRewards, path0, address(this));
+        // Swap for token1
+        uint256 amountToken1 = router.swapTokensForExactTokens(halfRewards, path1, address(this));
 
-	// Stake token0/token1 and get LP
-	uint256 amountLP = router.addLiquidity(token0, token1, amountToken0, amountToken1, address(this));
+        // Stake token0/token1 and get LP
+        uint256 amountLP = router.addLiquidity(token0, token1, amountToken0, amountToken1, address(this));
 
-	// Each user is entitled to LP equal to their share of rewardsToken previously held by this contract
-	for (uint i=0; i<_users.length; i++) {
-	    _balances[_users[i]] = (_rewards[_users[i]] * amountLP) / totalRewards;
-	    _rewards[_users[i]] = 0
-	}
+        // Each user is entitled to LP equal to their share of rewardsToken previously held by this contract
+        for (uint i=0; i<_users.length; i++) {
+            _balances[_users[i]] = (_rewards[_users[i]] * amountLP) / totalRewards;
+            _rewards[_users[i]] = 0
+        }
 
-	// We've claimed LP and allocated it to users; no more unclaimed rewards should remain.
-	totalRewards = 0;
+        // We've claimed LP and allocated it to users; no more unclaimed rewards should remain.
+        totalRewards = 0;
 
-	// Each user who had rewards should now have a non-zero balance. Stake their new LP
-	// into the farm and perform bookkeeping. Note that the private stakeLPForAddress does not
-	// call the claim modifier, since we claim at the beginning of the compound call. It's necessary
-	// to claim at the beginning of this function, since we MUST claim for all users before changing
-	// the amount of LP staked in the farm to avoid time-related prorating issues.
-	for (uint i=0; i<_users.length; i++) {
-	    stakeLPForAddress(_users[i])
-	}
+        // Each user who had rewards should now have a non-zero balance. Stake their new LP
+        // into the farm and perform bookkeeping. Note that the private stakeLPForAddress does not
+        // call the claim modifier, since we claim at the beginning of the compound call. It's necessary
+        // to claim at the beginning of this function, since we MUST claim for all users before changing
+        // the amount of LP staked in the farm to avoid time-related prorating issues.
+        for (uint i=0; i<_users.length; i++) {
+            stakeLPForAddress(_users[i])
+        }
     }
 }
