@@ -1,4 +1,5 @@
 const {newKit, StableToken} = require('@celo/contractkit')
+const assert = require('assert')
 const farmBotJson = require('../artifacts/farm-bot/codebase/contracts/farm-bot.sol/FarmBot.json')
 
 const FARM_BOT_ABI = farmBotJson.abi
@@ -10,6 +11,7 @@ async function getKit(privateKey) {
   const account = kit.web3.eth.accounts.privateKeyToAccount(privateKey)
   kit.web3.eth.accounts.wallet.add(account)
   kit.web3.eth.defaultAccount = account.address
+  console.log('Getting account with address ' + account.address)
   return kit
 }
 
@@ -38,21 +40,33 @@ async function deposit(kit, amount) {
 }
 
 async function withdraw(kit, amount) {
-  // todo
+  const farmBotContract = getFarmBotContract(kit)
+  return farmBotContract.methods.withdraw(amount).send({
+    from: kit.web3.eth.defaultAccount,
+    gas: 99000,
+    gasPrice: 1000000000,
+  })
 }
 
 async function main() {
   const kit1 = await getKit(process.env.ALFAJORES_WALLET_PRIVATE_KEY)
-  const amount = kit1.web3.utils.toWei('1', 'ether');
+  const amount = kit1.web3.utils.toWei('0.1', 'ether')
   const approveResult = await approve(kit1, amount)
-  console.log(`approveResult status: ${approveResult.status}`)
-  const depositResult = await deposit(kit1, amount)
-  console.log(`depositResult: ${JSON.stringify(depositResult)}`)
+  assert.equal(approveResult.status, true, 'Unexpected approve result')
 
-  // const kit2 = getKit(process.env.ALFAJORES_WALLET_PRIVATE_KEY_2)
-  // await withdraw(kit2, amount) // should fail (none deposited!)
-  //
-  // await withdraw(kit1, amount) // should pass
+  const depositResult = await deposit(kit1, amount)
+  assert.equal(depositResult.status, true, 'Unexpected deposit result')
+
+  const kit2 = await getKit(process.env.ALFAJORES_WALLET_PRIVATE_KEY_2)
+  try {
+    await withdraw(kit2, amount) // should fail (none deposited!)
+  } catch (error) {
+    if (!error.message.includes('Transaction has been reverted by the EVM')) {
+      throw error
+    }
+  }
+  const user1withdrawResult = await withdraw(kit1, amount) // should pass
+  assert.equal(user1withdrawResult.status, true, 'User 1 should be able to withdraw since they deposited already')
 }
 
 main()
