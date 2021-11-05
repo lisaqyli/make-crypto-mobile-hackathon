@@ -54,6 +54,15 @@ contract FarmBot {
      * for the same duration since the last claim event. All we need to do is keep track
      * of each user's fraction of the total staked LP; when we claim rewards, each
      * user is entitled to a portion of the reward proportional to their fraction of total staked LP.
+     *
+     * A user's rewards are only eligible for compounding if that user has staked LP. This is a subtle but probably
+     * important point. Since we have to claim rewards for all users whenever the staked LP balance changes,
+     * rewards will be claimed for a user when they unstake their LP. If that user's rewards are eligible for
+     * compounding, they would be converted into LP and staked on the next call to `compound`, which is probably not
+     * what they want. You can also imagine a scenario where a user unstakes their LP, with the intent to call withdrawLP
+     * and withdrawRewards directly after. A malicious actor could spam `compound`, forcing their rewards to be compounded,
+     * and all their LP to be re-staked. This avoids that issue. (Another way to avoid that would be to add another function
+     * `unstakeAndWithdrawAll`, which withdraws LP, claims rewards, and sends LP and rewards back to the owner.)
      */
 
     // Deposit LP token into contract.
@@ -89,11 +98,10 @@ contract FarmBot {
         _stakedBalances[msg.sender] = 0;
     }
 
-
     // Withdraws all rewards for a user. A user will almost certainly have rewards to withdraw after calling unstakeLP.
     // Since having no staked LP precludes a user from compounding whatever rewards may have been claimed before unstaking,
     // this function allows the user to withdraw those rewards explicitly. For "safety", a user must unstake their LP
-    // before withdrawing any remaining rewards.
+    // before withdrawing any remaining rewards (this check is probably not necessary).
     function withdrawRewards() public {
         require(_stakedBalances[msg.sender] == 0, "Must unstake LP before withdrawing rewards");
         require(_rewards[msg.sender] >= 0, "Must have non-zero rewards to withdraw");
