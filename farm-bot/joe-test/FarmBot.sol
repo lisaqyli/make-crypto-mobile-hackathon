@@ -16,13 +16,11 @@ contract FarmBot {
     mapping(address => uint256) private _balances;       // Balances of unstaked LP tokens held by the contract
     mapping(address => uint256) private _stakedBalances; // Balances of staked LP tokens stored in the StakingRewards contract
     mapping(address => uint256) private _rewards;        // Balances of claimed rewardsToken held by the contract
-    mapping(address => bool) private _compound;          // Whether or not a user's rewards should be autocompounded
 
     address[] private _users;                            // List of users, used for iterating over above mappings. Functions as a set that cannot be removed from.
     mapping(address => bool); private _userExists;       // Used to check the existence of a user.
 
     uint256 public totalStaked;            // Total amount currently staked
-    uint256 public totalRewards;           // Total amount of rewardsToken held by this contract
 
     IStakingRewards public stakingRewards; // StakingRewards contract address
     IERC20 public rewardsToken;            // Farming reward token
@@ -82,15 +80,26 @@ contract FarmBot {
     }
 
     // Unstake all LP token from farm for one user. Before unstaking, we need to claim everyone's rewards.
+    // If any rewards are claimed for this user, those rewards will not be eligible for future compounding.
     function unstakeLP() public claim {
         require(_stakedBalances[msg.sender] >= 0, "Must have non-zero staked balance to unstake");
         stakingToken.withdraw(_stakedBalances[msg.sender]);
         totalStaked -= _stakedBalances[msg.sender];
         _balances[msg.sender] += _stakedBalances[msg.sender]
         _stakedBalances[msg.sender] = 0;
-        // We disable compounding for this user's rewards when they unstake, so that future calls to
-        // compound do not reinvest any rewards that this user may have claimed.
-        _compound[msg.sender] = false;
+    }
+
+
+    // Withdraws all rewards for a user. A user will almost certainly have rewards to withdraw after calling unstakeLP.
+    // Since having no staked LP precludes a user from compounding whatever rewards may have been claimed before unstaking,
+    // this function allows the user to withdraw those rewards explicitly. For "safety", a user must unstake their LP
+    // before withdrawing any remaining rewards.
+    function withdrawRewards() public {
+        require(_stakedBalances[msg.sender] == 0, "Must unstake LP before withdrawing rewards");
+        require(_rewards[msg.sender] >= 0, "Must have non-zero rewards to withdraw");
+        bool transferSuccess = rewardsToken.transfer(msg.sender, _rewards[msg.sender]);
+        require(transferSuccess, "Transfer failed, aborting withdrawal");
+        _rewards[msg.sender] = 0
     }
 
     // Claims all rewards for all users in the farm.
@@ -98,7 +107,6 @@ contract FarmBot {
         uint256 rewards = stakingRewards.rewards(address(this));
         if (rewards > 0) {
             stakingRewards.getReward();
-            totalRewards += rewards
             for (uint i=0; i<_users.length; i++) {
                 // Allocate a fraction of the claims rewardsToken to each user proportional
                 // to their current share of the staked LP.
@@ -114,11 +122,25 @@ contract FarmBot {
     function stakeLPForAddress(address _address) private {
         require(_balances[_address] >= 0, "Must have non-zero balance to stake");
         stakingToken.stake(amount);
-        _stakedBalance[_address] += _balances[_address];
+        _stakedBalances[_address] += _balances[_address];
         totalStaked += _balances[_address]
         _balances[_address] = 0;
-        // Enable compounding for this user, since they're now staking LP.
-        _compound[_address] = true;
+    }
+
+    // Gets the rewards held by this contract that are eligible for compounding.
+    function getCompoundableRewards private returns (uint256) {
+        uint256 compoundableRewards = 0;
+        for (uint i=0; i<_users.length; i++) {
+            // It is possible that a user has rewards, but no LP staked in the farm. If this is the case,
+            // we should not count that user's rewards towards the amount available for compounding, since
+            // they've explicitly removed their LP from the farm (presumably because they do not want to
+            // autocompound anymore). This will commonly happen when a user calls `unstakeLP`; their LP
+            // will be unstaked, but the claim modifier will have claimed whatever they were owed beforehand.
+            if (_stakedBalances[_users[i]] > 0) {
+                compoundableRewards += _rewards[_users[i]];
+            }
+        }
+        return compoundableRewards;
     }
 
     // Compounds rewards for all users. Converts all rewardsToken held by the contract into
@@ -127,8 +149,13 @@ contract FarmBot {
         // THE FOLLOWING IS PSEUDOCODE! the contract calls are much more complicated than this and
         // require additional bookkeeping/arguments/contract calls to work correctly.
 
+        // Get the rewards held by this contract that are eligible for compounding. Not all rewards
+        // are eligible, since we don't want to compound rewards for users who have withdrawn their
+        // LP from the farm.
+        uint256 compoundableRewards = getCompoundableRewards();
+
         // Split rewards in half
-        uint256 halfRewards = totalRewards / 2;
+        uint256 halfRewards = compoundableRewards / 2;
 
         // Swap for token0
         uint256 amountToken0 = router.swapTokensForExactTokens(halfRewards, path0, address(this));
@@ -140,20 +167,27 @@ contract FarmBot {
 
         // Each user is entitled to LP equal to their share of rewardsToken previously held by this contract
         for (uint i=0; i<_users.length; i++) {
-            _balances[_users[i]] += (_rewards[_users[i]] * amountLP) / totalRewards;
-            _rewards[_users[i]] = 0
+            // We must check that the user has a balance staked, since the denominator (compoundableRewards)
+            // only takes into account users who are currently staking. Otherwise, not only will the calculation
+            // be diluted by those not staking LP, but we would compound for users not eligible for compounding (those
+            // with no staked LP).
+            if (_stakedBalances[_users[i]] > 0) {
+                _balances[_users[i]] += (_rewards[_users[i]] * amountLP) / compoundableRewards;
+                _rewards[_users[i]] = 0;
+            }
         }
 
-        // We've claimed LP and allocated it to users; no more unclaimed rewards should remain.
-        totalRewards = 0;
-
-        // Each user who had rewards should now have a non-zero balance. Stake their new LP
+        // Each user who had rewards AND staked LP should now have a non-zero balance. Stake their new LP
         // into the farm and perform bookkeeping. Note that the private stakeLPForAddress does not
         // call the claim modifier, since we claim at the beginning of the compound call. It's necessary
         // to claim at the beginning of this function, since we MUST claim for all users before changing
         // the amount of LP staked in the farm to avoid time-related prorating issues.
         for (uint i=0; i<_users.length; i++) {
-            stakeLPForAddress(_users[i])
+            // Same check as above. The require in stakeLPForAddress will throw without this. This check also
+            // enforces the semantics of "no staked LP" => "do not compound any rewards I might have".
+            if (_stakedBalances[_users[i]] > 0) {
+                stakeLPForAddress(_users[i]);
+            }
         }
     }
 }
