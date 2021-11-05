@@ -30,9 +30,9 @@ function getFarmBotContract(kit) {
 
 async function deposit(kit, amount) {
   const farmBotContract = getFarmBotContract(kit)
-  return farmBotContract.methods.deposit(amount).send({ // fixme getting error here: TypeError: Cannot read property 'length' of undefined
+  return farmBotContract.methods.deposit(amount).send({
     from:kit.web3.eth.defaultAccount,
-    gas: 50000,
+    gas: 99000,
     gasPrice: 1000000000,
   })
 }
@@ -43,11 +43,11 @@ async function withdraw(kit, amount) {
 
 async function main() {
   const kit1 = await getKit(process.env.ALFAJORES_WALLET_PRIVATE_KEY)
-  const amount = kit1.web3.utils.toWei('10', 'ether');
+  const amount = kit1.web3.utils.toWei('1', 'ether');
   const approveResult = await approve(kit1, amount)
   console.log(`approveResult status: ${approveResult.status}`)
-  const depositResult = await deposit(kit1)
-  console.log(`depositResult: ${depositResult}`)
+  const depositResult = await deposit(kit1, amount)
+  console.log(`depositResult: ${JSON.stringify(depositResult)}`)
 
   // const kit2 = getKit(process.env.ALFAJORES_WALLET_PRIVATE_KEY_2)
   // await withdraw(kit2, amount) // should fail (none deposited!)
