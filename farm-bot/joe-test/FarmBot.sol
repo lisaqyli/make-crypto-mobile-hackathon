@@ -62,7 +62,7 @@ contract FarmBot {
      * what they want. You can also imagine a scenario where a user unstakes their LP, with the intent to call withdrawLP
      * and withdrawRewards directly after. A malicious actor could spam `compound`, forcing their rewards to be compounded,
      * and all their LP to be re-staked. This avoids that issue. (Another way to avoid that would be to add another function
-     * `unstakeAndWithdrawAll`, which withdraws LP, claims rewards, and sends LP and rewards back to the owner.)
+     * `unstakeAndWithdrawAll`, which unstakes LP, claims rewards, and sends LP and rewards back to the owner in a single call.)
      */
 
     // Deposit LP token into contract.
