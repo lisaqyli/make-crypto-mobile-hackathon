@@ -170,7 +170,8 @@ contract FarmBot {
         // Stake token0/token1 and get LP
         uint256 amountLP = router.addLiquidity(token0, token1, amountToken0, amountToken1, address(this));
 
-        // Each user is entitled to LP equal to their share of rewardsToken previously held by this contract
+        // Each user with LP staked is entitled to new LP equal to their share of
+        // compound-eligible rewardsToken previously held by this contract.
         for (uint i=0; i<_users.length; i++) {
             // We must check that the user has a balance staked, since the denominator (compoundableRewards)
             // only takes into account users who are currently staking. Otherwise, not only will the calculation
