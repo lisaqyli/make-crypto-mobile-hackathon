@@ -140,7 +140,7 @@ contract FarmBot {
 
         // Each user is entitled to LP equal to their share of rewardsToken previously held by this contract
         for (uint i=0; i<_users.length; i++) {
-            _balances[_users[i]] = (_rewards[_users[i]] * amountLP) / totalRewards;
+            _balances[_users[i]] += (_rewards[_users[i]] * amountLP) / totalRewards;
             _rewards[_users[i]] = 0
         }
 
