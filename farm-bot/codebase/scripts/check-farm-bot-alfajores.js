@@ -1,8 +1,7 @@
 const {newKit, StableToken} = require('@celo/contractkit')
 const assert = require('assert')
-const farmBotJson = require('../artifacts/farm-bot/codebase/contracts/farm-bot.sol/FarmBot.json')
+const FARM_BOT_ABI = require('../abis/farmBot.json')
 
-const FARM_BOT_ABI = farmBotJson.abi
 const FORNO_ALFAJORES_URL = 'https://alfajores-forno.celo-testnet.org'
 const FARM_BOT_ADDRESS_ALFAJORES = '0xbdC629D7132f111f7bE2Ab54BB2C69F25B1b0046'
 
