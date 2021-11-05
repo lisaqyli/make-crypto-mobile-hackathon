@@ -48,6 +48,18 @@ async function withdraw(kit, amount) {
   })
 }
 
+/**
+ * Runs a test confirming that a user cannot withdraw without having deposited,
+ *  even if another user has deposited (so the contract has funds).
+ *
+ * Also confirms that the user who has deposited may withdraw their funds.
+ *
+ * Required env vars:
+ * - ALFAJORES_WALLET_PRIVATE_KEY : mapping to valid private key of Alfajores wallet with at least 0.1 cUSD
+ * - ALFAJORES_WALLET_PRIVATE_KEY_2 : must be different than ALFAJORES_WALLET_PRIVATE_KEY
+ *
+ * @returns {Promise<void>}
+ */
 async function main() {
   const kit1 = await getKit(process.env.ALFAJORES_WALLET_PRIVATE_KEY)
   const amount = kit1.web3.utils.toWei('0.1', 'ether')
