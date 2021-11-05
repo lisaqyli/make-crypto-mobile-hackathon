@@ -108,7 +108,7 @@ contract FarmBot {
         if (rewards > 0) {
             stakingRewards.getReward();
             for (uint i=0; i<_users.length; i++) {
-                // Allocate a fraction of the claims rewardsToken to each user proportional
+                // Allocate a fraction of the claimed rewardsToken to each user proportional
                 // to their current share of the staked LP.
                 _rewards[_users[i]] = (_stakedBalances[_users[i]] * rewards) / totalStaked;
             }
