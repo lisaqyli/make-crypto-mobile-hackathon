@@ -114,7 +114,6 @@ contract FarmBot {
     function stakeLPForAddress(address _address) private {
         require(_balances[_address] >= 0, "Must have non-zero balance to stake");
         stakingToken.stake(amount);
-        require(transferSuccess, "Transfer failed, aborting withdrawal");
         _stakedBalance[_address] += _balances[_address];
         totalStaked += _balances[_address]
         _balances[_address] = 0;
