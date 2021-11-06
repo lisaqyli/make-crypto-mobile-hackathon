@@ -38,7 +38,12 @@ contract FarmBot {
         // todo might need a lock on this
         uint256 _fpAmount = this.getFpAmount(_lpAmount);
         require(fpBalances[msg.sender] >= _fpAmount, "Cannot withdraw more than the total balance of the owner");
-        farm.withdraw(_lpAmount);
+
+        uint256 tokenBalance = IERC20(tokenAddress).balanceOf(address(this));
+        if (_lpAmount > tokenBalance) {
+            farm.withdraw(_lpAmount - tokenBalance);
+        }
+
         bool transferSuccess = IERC20(tokenAddress).transfer(msg.sender, _lpAmount);
         require(transferSuccess, "Transfer failed, aborting withdrawal");
         fpBalances[msg.sender] -= _fpAmount;
