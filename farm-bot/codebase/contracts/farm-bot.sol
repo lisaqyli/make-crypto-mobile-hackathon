@@ -31,6 +31,7 @@ contract FarmBot {
         fpTotalBalance += _fpAmount;
         lpTotalBalance += _lpAmount;
         fpBalances[msg.sender] += _fpAmount;
+        investInFarm();
     }
 
     function withdraw(uint256 _lpAmount) public {
