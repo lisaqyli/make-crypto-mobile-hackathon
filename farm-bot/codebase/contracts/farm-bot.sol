@@ -18,7 +18,7 @@ contract FarmBot {
     function getFpAmount(uint256 _lpAmount) public view returns (uint256) {
         // todo check the rounding on this at some point...
         if (lpTotalBalance == 0) {
-            return 1;
+            return _lpAmount;
         }
         return _lpAmount * fpTotalBalance / lpTotalBalance;
     }
