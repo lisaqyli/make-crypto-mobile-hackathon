@@ -3,7 +3,7 @@ const assert = require('assert')
 const FARM_BOT_ABI = require('../abis/farmBot.json')
 
 const FORNO_ALFAJORES_URL = 'https://alfajores-forno.celo-testnet.org'
-const FARM_BOT_ADDRESS_ALFAJORES = '0xbdC629D7132f111f7bE2Ab54BB2C69F25B1b0046'
+const FARM_BOT_ADDRESS_ALFAJORES = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
 
 async function getKit(privateKey) {
   const kit = await newKit(FORNO_ALFAJORES_URL)
