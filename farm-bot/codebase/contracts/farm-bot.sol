@@ -8,7 +8,7 @@ contract FarmBot {
     mapping(address => uint256) private _balances;
 
     address public tokenAddress = 0xf3098223845F37Ffe4B3A066F2D38A0587317269; // mcUSD-Celo
-    address public farm = StakingRewards(0x299f31f48D4667a6f68E4331dB05212d57Cc7f80); // alfajores farm for mcUSD-Celo
+    StakingRewards public farm = StakingRewards(0x299f31f48D4667a6f68E4331dB05212d57Cc7f80); // alfajores farm for mcUSD-Celo
 
     function deposit(uint256 amount) public {
         // todo might need a lock on this
@@ -30,6 +30,6 @@ contract FarmBot {
         uint256 tokenBalance = IERC20(tokenAddress).balanceOf(address(this));
         require(tokenBalance > 0, "Cannot invest in farm because tokenBalance is 0");
         IERC20(tokenAddress).approve(address(farm), tokenBalance);
-        farm.stake(tokenBalance); // fixme compilation error: TypeError: Member "stake" not found or not visible after argument-dependent lookup in address.
+        farm.stake(tokenBalance);
     }
 }
