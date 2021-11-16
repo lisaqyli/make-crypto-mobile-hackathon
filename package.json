@@ -15,8 +15,7 @@
   "license": "MIT",
   "scripts": {
     "compile-contracts": "yarn hardhat compile",
-    "test": "ts-mocha ./farm-bot/codebase/test/**/*.ts",
-    "deploy-contracts": "ts-node --files ./farm-bot/codebase/scripts/deploy.ts"
+    "test": "ts-mocha ./farm-bot/codebase/test/**/*.ts"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
