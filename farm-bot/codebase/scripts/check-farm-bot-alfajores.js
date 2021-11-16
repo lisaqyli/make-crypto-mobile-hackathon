@@ -69,6 +69,10 @@ async function invest(kit) {
  * - ALFAJORES_WALLET_PRIVATE_KEY : mapping to valid private key of Alfajores wallet with at least 0.1 cUSD
  * - ALFAJORES_WALLET_PRIVATE_KEY_2 : must be different than ALFAJORES_WALLET_PRIVATE_KEY
  *
+ * Currently farm bot takes LP tokens with this address: 0xf3098223845F37Ffe4B3A066F2D38A0587317269
+ * To get these, you must first obtain Celo (native asset) and mcUSD, which is at this address: 0x71DB38719f9113A36e14F409bAD4F07B58b4730b
+ * Then you can stake the Celo/mCUSD here: https://app.ubeswap.org/#/add/0x71DB38719f9113A36e14F409bAD4F07B58b4730b/0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9
+ *
  * @returns {Promise<void>}
  */
 async function main() {
