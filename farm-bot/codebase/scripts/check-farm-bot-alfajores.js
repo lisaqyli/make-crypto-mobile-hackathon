@@ -4,7 +4,7 @@ const FARM_BOT_ABI = require('../abis/farmBot.json')
 const {WrapperCache} = require("@celo/contractkit/lib/contract-cache");
 
 const FORNO_ALFAJORES_URL = 'https://alfajores-forno.celo-testnet.org'
-const FARM_BOT_ADDRESS_ALFAJORES = '0x78bA5A050a5A8b257a91cd8299D34D0643520Df5'
+const FARM_BOT_ADDRESS_ALFAJORES = '0xdcC4aE4C2563A3918081791d3e8640D06b82aC63'
 const TOKEN_ADDRESS = '0xf3098223845F37Ffe4B3A066F2D38A0587317269' // mcUSD-Celo LP
 
 async function getKit(privateKey) {
@@ -45,7 +45,7 @@ async function withdraw(kit, amount) {
   const farmBotContract = getFarmBotContract(kit)
   return farmBotContract.methods.withdraw(amount).send({
     from: kit.web3.eth.defaultAccount,
-    gas: 99000,
+    gas: 1076506,
     gasPrice: 1000000000,
   })
 }
@@ -91,8 +91,10 @@ async function main() {
   //     throw error
   //   }
   // }
-  // const user1withdrawResult = await withdraw(kit1, amount) // should pass
-  // assert.equal(user1withdrawResult.status, true, 'User 1 should be able to withdraw since they deposited already')
+
+  console.log(`withdrawing LP for account ${kit1.web3.eth.defaultAccount}`)
+  const user1withdrawResult = await withdraw(kit1, amount) // should pass
+  assert.equal(user1withdrawResult.status, true, 'User 1 should be able to withdraw since they deposited already')
 }
 
 main().catch(console.error)

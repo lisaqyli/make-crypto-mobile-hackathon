@@ -33,12 +33,11 @@ contract FarmBot {
         fpTotalBalance += _fpAmount;
         lpTotalBalance += _lpAmount;
         fpBalances[msg.sender] += _fpAmount;
-        //        investInFarm(); // todo uncomment once debugging complete
+        investInFarm();
     }
 
     function withdraw(uint256 _lpAmount) public {
         // todo might need a lock on this
-        require(_lpAmount > 0, "Must withdraw positive amount");
         uint256 _fpAmount = this.getFpAmount(_lpAmount);
         require(fpBalances[msg.sender] >= _fpAmount, "Cannot withdraw more than the total balance of the owner");
 
