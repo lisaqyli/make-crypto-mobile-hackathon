@@ -83,14 +83,14 @@ async function main() {
   const depositResult = await deposit(kit1, amount)
   assert.equal(depositResult.status, true, 'Unexpected deposit result')
 
-  // const kit2 = await getKit(process.env.ALFAJORES_WALLET_PRIVATE_KEY_2)
-  // try {
-  //   await withdraw(kit2, amount) // should fail (none deposited!)
-  // } catch (error) {
-  //   if (!error.message.includes('Transaction has been reverted by the EVM')) {
-  //     throw error
-  //   }
-  // }
+  const kit2 = await getKit(process.env.ALFAJORES_WALLET_PRIVATE_KEY_2)
+  try {
+    await withdraw(kit2, amount) // should fail (none deposited!)
+  } catch (error) {
+    if (!error.message.includes('Transaction has been reverted by the EVM')) {
+      throw error
+    }
+  }
 
   console.log(`withdrawing LP for account ${kit1.web3.eth.defaultAccount}`)
   const user1withdrawResult = await withdraw(kit1, amount) // should pass
