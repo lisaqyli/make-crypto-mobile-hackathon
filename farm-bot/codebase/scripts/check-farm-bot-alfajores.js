@@ -61,7 +61,8 @@ async function invest(kit) {
 
 async function claimRewards(kit) {
   const farmBotContract = getFarmBotContract(kit)
-  return farmBotContract.methods.claimRewards().send({
+  const tenSecondsFromNowDeadline = new Date().getTime() + 10*1000;
+  return farmBotContract.methods.claimRewards(tenSecondsFromNowDeadline).send({
     from: kit.web3.eth.defaultAccount,
     gas: 1076506,
     gasPrice: 1000000000,
