@@ -8,12 +8,17 @@ import {
 } from "../src/farm-bot-api"
 import assert from "assert"
 import {ContractKit} from "@celo/contractkit"
+import * as fs from "fs";
+import {promisify} from "util";
+
 const STAKING_REWARDS_ABI = require('../abis/staking-rewards.json')
 const UBE_FACTORY_ABI = require('../abis/ube-factory.json')
 const UBE_PAIR_ABI = require('../abis/ube-pair.json')
 
 const UBE_FACTORY_ADDRESS = '0x62d5b84bE28a183aBB507E125B384122D2C25fAE' // on mainnet and alfajores
 const CELO_ADDRESS_ALFAJORES = '0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9' // todo move to constants file
+
+const WEI_PER_GWEI = 10**9
 
 /**
  * Get the value of unclaimed farming rewards in cUSD
@@ -22,18 +27,18 @@ const CELO_ADDRESS_ALFAJORES = '0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9' // t
  * @param farmBot
  * @param _walletAddress
  */
-async function unclaimedRewardValueInCELOWei(kit: ContractKit, farmBot: FarmBotContract, _walletAddress: string) {
+async function unclaimedRewardValueInCELOGWei(kit: ContractKit, farmBot: FarmBotContract, _walletAddress: string) {
   const stakingRewardsContractAddress = await getStakingRewardsContractAddress(farmBot)
   const stakingRewards = new kit.web3.eth.Contract(STAKING_REWARDS_ABI, stakingRewardsContractAddress)
   console.log(`Getting farm bot's earnings in StakingRewards contract`)
-  const earnings = await stakingRewards.methods.earned(FARM_BOT_ADDRESS_ALFAJORES).call()
+  const earningsWei = await stakingRewards.methods.earned(FARM_BOT_ADDRESS_ALFAJORES).call()
   const rewardsTokenAddress = await stakingRewards.methods.rewardsToken().call()
-  return CELOWeiValue(kit, rewardsTokenAddress, parseInt(earnings))
+  return CELOGWeiValue(kit, rewardsTokenAddress, parseInt(earningsWei))
 }
 
-async function CELOWeiValue(kit: ContractKit, tokenAddress: string, amountOfToken: number): Promise<number> {
+async function CELOGWeiValue(kit: ContractKit, tokenAddress: string, amountWei: number): Promise<number> {
   const exchangeRate = await getExchangeRate(kit, CELO_ADDRESS_ALFAJORES, tokenAddress)
-  return exchangeRate * amountOfToken
+  return exchangeRate * amountWei / WEI_PER_GWEI
 }
 
 /**
@@ -66,6 +71,29 @@ async function getExchangeRate(kit: ContractKit, token1Address: string, token2Ad
   return token1Address < token2Address ? 1 / exchangeRate : exchangeRate
 }
 
+function getGasCostFileName() {
+  return `${__dirname}/../data/compoundGasCost.txt`
+}
+
+async function saveGasCost(gasCostGWei: number) {
+  await promisify(fs.writeFile)(getGasCostFileName(), gasCostGWei.toString(10), {flag: 'w+'})
+}
+
+async function getSavedGasCostGwei(): Promise<number> {
+  try {
+    const gasCostStr = await promisify(fs.readFile)(getGasCostFileName())
+    return parseInt(gasCostStr.toString())
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('ENOENT')) {
+      console.log('No save gas cost found, returning 0')
+      return 0
+    } else {
+      throw err
+    }
+  }
+
+}
+
 /**
  * Claim and re-invest rewards for a farm bot contract.
  *
@@ -82,11 +110,13 @@ async function main(){
   assert.ok(walletAddress)
   const farmBot = getFarmBotContract(kit)
 
-  const balance = await unclaimedRewardValueInCELOWei(kit, farmBot, walletAddress)
+  const rewardGWei = await unclaimedRewardValueInCELOGWei(kit, farmBot, walletAddress)
   // todo save gas cost to file and use as threshold for whether to claim rewards
-  if (balance > 1) {
-    const {status, gasUsed: _gasUsedGWei} = await claimRewards(farmBot, walletAddress)
+  const costGWei = await getSavedGasCostGwei()
+  if (rewardGWei > costGWei) {
+    const {status, gasUsed: gasUsedGWei} = await claimRewards(farmBot, walletAddress)
     assert.ok(status)
+    await saveGasCost(gasUsedGWei)
   } else {
     console.log('Not enough balance to claim. Doing nothing.')
   }
