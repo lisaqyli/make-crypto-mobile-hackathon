@@ -14,6 +14,7 @@ import {promisify} from "util";
 const STAKING_REWARDS_ABI = require('../abis/staking-rewards.json')
 const UBE_FACTORY_ABI = require('../abis/ube-factory.json')
 const UBE_PAIR_ABI = require('../abis/ube-pair.json')
+const ERC20_ABI = require('../abis/erc20.json')
 
 const UBE_FACTORY_ADDRESS = '0x62d5b84bE28a183aBB507E125B384122D2C25fAE' // on mainnet and alfajores
 const CELO_ADDRESS_ALFAJORES = '0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9' // todo move to constants file
@@ -32,11 +33,14 @@ async function payoutValueInGWei(kit: ContractKit, farmBot: FarmBotContract, _wa
   const stakingRewardsContractAddress = await getStakingRewardsContractAddress(farmBot)
   const stakingRewards = new kit.web3.eth.Contract(STAKING_REWARDS_ABI, stakingRewardsContractAddress)
   console.log(`Getting farm bot's earnings in StakingRewards contract`)
-  const earningsWei = await stakingRewards.methods.earned(FARM_BOT_ADDRESS_ALFAJORES).call()
+  const unclaimedRewardsWei = await stakingRewards.methods.earned(FARM_BOT_ADDRESS_ALFAJORES).call()
   const rewardsTokenAddress = await stakingRewards.methods.rewardsToken().call()
-  const totalReward = await CELOGWeiValue(kit, rewardsTokenAddress, parseInt(earningsWei))
+  const rewardsTokenContract = new kit.web3.eth.Contract(ERC20_ABI, rewardsTokenAddress)
+  const rewardsTokenBalanceWei = await rewardsTokenContract.methods.balanceOf(FARM_BOT_ADDRESS_ALFAJORES).call()
   const feeFraction = await getClaimRewardsFeeFraction(farmBot)
-  return Math.round(feeFraction * totalReward)
+  const balanceAfterClaimWei = parseInt(rewardsTokenBalanceWei) + parseInt(unclaimedRewardsWei);
+  const payoutWei = Math.floor(feeFraction * balanceAfterClaimWei)
+  return CELOGWeiValue(kit, rewardsTokenAddress, payoutWei)
 }
 
 async function CELOGWeiValue(kit: ContractKit, tokenAddress: string, amountWei: number): Promise<number> {
@@ -58,7 +62,7 @@ async function getExchangeRate(kit: ContractKit, token1Address: string, token2Ad
   if (token1Address === token2Address) {
     return 1
   }
-  console.log(`Getting exchange rate from ${token1Address} to ${token2Address}`)
+  console.debug(`Getting exchange rate from ${token1Address} to ${token2Address}`)
   const ubeFactory = new kit.web3.eth.Contract(UBE_FACTORY_ABI, UBE_FACTORY_ADDRESS)
   const pairAddress = await ubeFactory.methods.getPair(token1Address, token2Address).call()
   const pairContract = new kit.web3.eth.Contract(
@@ -70,8 +74,9 @@ async function getExchangeRate(kit: ContractKit, token1Address: string, token2Ad
   const numerator = 997 * reserve0;
   const denominator = reserve1 * 1000 + 997;
   const exchangeRate = numerator / denominator;
-
-  return token1Address < token2Address ? 1 / exchangeRate : exchangeRate
+  const output = token1Address < token2Address ? 1 / exchangeRate : exchangeRate;
+  console.debug(`exchange rate: ${output}`)
+  return output
 }
 
 function getGasCostFileName() {
@@ -118,7 +123,8 @@ async function main(){
   const rewardGWei = await payoutValueInGWei(kit, farmBot, walletAddress)
   const costGWei = Math.max(await getSavedGasCostGwei(), MIN_GAS_LIMIT)
   if (rewardGWei > costGWei) {
-    const {status, gasUsed: gasUsedGWei} = await claimRewards(farmBot, walletAddress, rewardGWei)
+    console.debug(`expected reward: ${rewardGWei}`)
+    const {status, gasUsed: gasUsedGWei} = await claimRewards(farmBot, walletAddress, Math.floor(rewardGWei))
     assert.ok(status)
     await saveGasCost(gasUsedGWei)
   } else {
