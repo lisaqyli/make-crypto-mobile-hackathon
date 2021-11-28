@@ -10,6 +10,7 @@ import assert from "assert"
 import {ContractKit} from "@celo/contractkit"
 import * as fs from "fs";
 import {promisify} from "util";
+import BigNumber from "bignumber.js";
 
 const STAKING_REWARDS_ABI = require('../abis/staking-rewards.json')
 const UBE_FACTORY_ABI = require('../abis/ube-factory.json')
@@ -17,7 +18,7 @@ const UBE_PAIR_ABI = require('../abis/ube-pair.json')
 const ERC20_ABI = require('../abis/erc20.json')
 
 const UBE_FACTORY_ADDRESS = '0x62d5b84bE28a183aBB507E125B384122D2C25fAE' // on mainnet and alfajores
-const CELO_ADDRESS_ALFAJORES = '0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9' // todo move to constants file
+const CELO_ADDRESS_ALFAJORES = '0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9'
 
 const WEI_PER_GWEI = 10**9
 const MIN_GAS_LIMIT = 21784
@@ -29,23 +30,22 @@ const MIN_GAS_LIMIT = 21784
  * @param farmBot
  * @param _walletAddress
  */
-async function payoutValueInGWei(kit: ContractKit, farmBot: FarmBotContract, _walletAddress: string) {
+async function payoutValueInGWei(kit: ContractKit, farmBot: FarmBotContract, _walletAddress: string): Promise<number> {
   const stakingRewardsContractAddress = await getStakingRewardsContractAddress(farmBot)
   const stakingRewards = new kit.web3.eth.Contract(STAKING_REWARDS_ABI, stakingRewardsContractAddress)
-  console.log(`Getting farm bot's earnings in StakingRewards contract`)
   const unclaimedRewardsWei = await stakingRewards.methods.earned(FARM_BOT_ADDRESS_ALFAJORES).call()
   const rewardsTokenAddress = await stakingRewards.methods.rewardsToken().call()
   const rewardsTokenContract = new kit.web3.eth.Contract(ERC20_ABI, rewardsTokenAddress)
   const rewardsTokenBalanceWei = await rewardsTokenContract.methods.balanceOf(FARM_BOT_ADDRESS_ALFAJORES).call()
   const feeFraction = await getClaimRewardsFeeFraction(farmBot)
-  const balanceAfterClaimWei = parseInt(rewardsTokenBalanceWei) + parseInt(unclaimedRewardsWei);
-  const payoutWei = Math.floor(feeFraction * balanceAfterClaimWei)
+  const balanceAfterClaimWei = new BigNumber(rewardsTokenBalanceWei).plus(new BigNumber(unclaimedRewardsWei))
+  const payoutWei = balanceAfterClaimWei.multipliedBy(feeFraction).integerValue(BigNumber.ROUND_FLOOR)
   return CELOGWeiValue(kit, rewardsTokenAddress, payoutWei)
 }
 
-async function CELOGWeiValue(kit: ContractKit, tokenAddress: string, amountWei: number): Promise<number> {
+async function CELOGWeiValue(kit: ContractKit, tokenAddress: string, amountWei: BigNumber): Promise<number> {
   const exchangeRate = await getExchangeRate(kit, CELO_ADDRESS_ALFAJORES, tokenAddress)
-  return exchangeRate * amountWei / WEI_PER_GWEI
+  return amountWei.multipliedBy(exchangeRate).dividedBy(WEI_PER_GWEI).toNumber()
 }
 
 /**
