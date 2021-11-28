@@ -15,7 +15,7 @@ interface Transaction {
     from: string
     gas: number
     gasPrice: number
-  }) => Promise<{status: boolean}>
+  }) => Promise<{status: boolean, gasUsed: number}>
 }
 
 interface Call<Params, Return> {
