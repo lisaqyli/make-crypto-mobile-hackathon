@@ -97,12 +97,14 @@ async function getSavedGasCostGwei(): Promise<number> {
 }
 
 /**
- * Claim and re-invest rewards for a farm bot contract.
+ * Claim and re-invest rewards for a farm bot contract, if the expected payout exceeds the expected cost.
  *
  * Farm bot will re-invest the rewards to earn compound interest on the rewards.
  *
- * The wallet calling the farm bot method will also receive a bounty proportional to the amount of rewards the contract
+ * The wallet calling the farm bot method will receive a bounty proportional to the amount of rewards the contract
  *  has earned since the last time rewards were claimed/reinvested.
+ *
+ * Avoids sending the transaction if the expected gas cost is higher than the expected reward.
  */
 async function main(){
   const privateKey = process.env.ALFAJORES_WALLET_PRIVATE_KEY
@@ -113,7 +115,6 @@ async function main(){
   const farmBot = getFarmBotContract(kit)
 
   const rewardGWei = await payoutValueInGWei(kit, farmBot, walletAddress)
-  // todo save gas cost to file and use as threshold for whether to claim rewards
   const costGWei = await getSavedGasCostGwei()
   if (rewardGWei > costGWei) {
     const {status, gasUsed: gasUsedGWei} = await claimRewards(farmBot, walletAddress, rewardGWei)
