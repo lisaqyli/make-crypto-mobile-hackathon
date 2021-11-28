@@ -19,6 +19,7 @@ const UBE_FACTORY_ADDRESS = '0x62d5b84bE28a183aBB507E125B384122D2C25fAE' // on m
 const CELO_ADDRESS_ALFAJORES = '0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9' // todo move to constants file
 
 const WEI_PER_GWEI = 10**9
+const MIN_GAS_LIMIT = 21784
 
 /**
  * Get the expected payout in Celo gwei
@@ -115,7 +116,7 @@ async function main(){
   const farmBot = getFarmBotContract(kit)
 
   const rewardGWei = await payoutValueInGWei(kit, farmBot, walletAddress)
-  const costGWei = await getSavedGasCostGwei()
+  const costGWei = Math.max(await getSavedGasCostGwei(), MIN_GAS_LIMIT)
   if (rewardGWei > costGWei) {
     const {status, gasUsed: gasUsedGWei} = await claimRewards(farmBot, walletAddress, rewardGWei)
     assert.ok(status)
