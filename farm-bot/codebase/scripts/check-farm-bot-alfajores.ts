@@ -1,6 +1,5 @@
-const assert = require('assert')
-const {getKit, approve, deposit, withdraw, claimRewards} = require("../src/farm-bot-api.ts");
-
+import {approve, claimRewards, deposit, getKit, withdraw} from "../src/farm-bot-api"
+import assert from "assert"
 
 /**
  * Runs a test confirming that a user cannot withdraw without having deposited,
@@ -19,7 +18,9 @@ const {getKit, approve, deposit, withdraw, claimRewards} = require("../src/farm-
  * @returns {Promise<void>}
  */
 async function main() {
-  const kit1 = await getKit(process.env.ALFAJORES_WALLET_PRIVATE_KEY)
+  const privateKey = process.env.ALFAJORES_WALLET_PRIVATE_KEY
+  assert.ok(privateKey)
+  const kit1 = await getKit(privateKey)
   const amount = kit1.web3.utils.toWei('0.01', 'ether')
 
   console.log(`approving for account ${kit1.web3.eth.defaultAccount}`)
@@ -30,7 +31,9 @@ async function main() {
   const depositResult = await deposit(kit1, amount)
   assert.equal(depositResult.status, true, 'Unexpected deposit result')
 
-  const kit2 = await getKit(process.env.ALFAJORES_WALLET_PRIVATE_KEY_2)
+  const privateKey2 = process.env.ALFAJORES_WALLET_PRIVATE_KEY_2
+  assert.ok(privateKey2)
+  const kit2 = await getKit(privateKey2)
   try {
     console.log(`attempting to withdraw before depositing`)
     await withdraw(kit2, amount) // should fail (none deposited!)

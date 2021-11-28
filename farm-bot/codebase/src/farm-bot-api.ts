@@ -1,19 +1,20 @@
 import {ContractKit, newKit} from "@celo/contractkit";
 import {WrapperCache} from "@celo/contractkit/lib/contract-cache";
 
-import {CeloTransactionObject} from '@celo/connect'
 import * as assert from "assert";
 
 const FARM_BOT_ABI = require('../abis/farmBot.json')
 
 
 const FORNO_ALFAJORES_URL = 'https://alfajores-forno.celo-testnet.org'
-const FARM_BOT_ADDRESS_ALFAJORES = '0x3B1E4f872a174a33F89711033Ec133748e92aCa0'
 const LP_TOKEN_ADDRESS = '0xe952fe9608a20f80f009a43AEB6F422750285638' // Celo-cUSD LP
+export const FARM_BOT_ADDRESS_ALFAJORES = '0x3B1E4f872a174a33F89711033Ec133748e92aCa0'
+
+
 
 interface FarmBotContract {
   methods: {
-    deposit: (amount: string) => CeloTransactionObject<boolean>
+    deposit: (amount: string) => any
     withdraw: (amount: string) => any
     claimRewards: (deadline: number) => any
   }
@@ -57,6 +58,7 @@ export async function deposit(kit: ContractKit, amount: string) {
 
 export async function withdraw(kit: ContractKit, amount: string) {
   const farmBotContract = getFarmBotContract(kit)
+  assert.ok(kit.web3.eth.defaultAccount)
   return farmBotContract.methods.withdraw(amount).send({
     from: kit.web3.eth.defaultAccount,
     gas: 1076506,
@@ -64,9 +66,10 @@ export async function withdraw(kit: ContractKit, amount: string) {
   })
 }
 
-export async function claimRewards(kit: ContractKit): Promise<boolean> {
+export async function claimRewards(kit: ContractKit) {
   const farmBotContract = getFarmBotContract(kit)
-  const tenSecondsFromNowDeadline = new Date().getTime() + 10*1000;
+  const tenSecondsFromNowDeadline = new Date().getTime() + 10*1000
+  assert.ok(kit.web3.eth.defaultAccount)
   return farmBotContract.methods.claimRewards(tenSecondsFromNowDeadline).send({
     from: kit.web3.eth.defaultAccount,
     gas: 1076506,

@@ -1,5 +1,5 @@
 import {claimRewards, getKit} from "../src/farm-bot-api"
-import assert from "assert";
+import assert from "assert"
 
 /**
  * Claim and re-invest rewards for a farm bot contract.
@@ -10,15 +10,12 @@ import assert from "assert";
  *  has earned since the last time rewards were claimed/reinvested.
  */
 async function main(){
-  const privateKey = process.env.PRIVATE_KEY
+  const privateKey = process.env.ALFAJORES_WALLET_PRIVATE_KEY
   assert.ok(privateKey)
   const kit = await getKit(privateKey)
 
-  const farmBotAddress = process.env.FARM_BOT_ADDRESS
-  assert.ok(farmBotAddress)
-
   const claimRewardsResult = await claimRewards(kit)
-  assert.ok(claimRewardsResult)
+  assert.ok(claimRewardsResult.status)
 }
 
 main().catch(console.error)
