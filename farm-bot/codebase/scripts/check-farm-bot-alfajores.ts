@@ -1,4 +1,4 @@
-import {approve, claimRewards, deposit, getKit, withdraw} from "../src/farm-bot-api"
+import {approve, claimRewards, deposit, getFarmBotContract, getKit, withdraw} from "../src/farm-bot-api"
 import assert from "assert"
 
 /**
@@ -21,13 +21,16 @@ async function main() {
   const privateKey = process.env.ALFAJORES_WALLET_PRIVATE_KEY
   assert.ok(privateKey)
   const kit1 = await getKit(privateKey)
+  const farmBot = getFarmBotContract(kit1)
   const amount = kit1.web3.utils.toWei('0.01', 'ether')
 
-  console.log(`approving for account ${kit1.web3.eth.defaultAccount}`)
+  const walletAddress1 = kit1.web3.eth.defaultAccount
+  assert.ok(walletAddress1)
+  console.log(`approving for account ${walletAddress1}`)
   const approveResult = await approve(kit1, amount)
   assert.equal(approveResult.status, true, 'Unexpected approve result')
 
-  console.log(`depositing LP for account ${kit1.web3.eth.defaultAccount}`)
+  console.log(`depositing LP for account ${walletAddress1}`)
   const depositResult = await deposit(kit1, amount)
   assert.equal(depositResult.status, true, 'Unexpected deposit result')
 
@@ -43,11 +46,10 @@ async function main() {
     }
   }
 
-  console.log(`claiming rewards`)
-  const claimResult = await claimRewards(kit1)
+  const claimResult = await claimRewards(farmBot, walletAddress1)
   assert.equal(claimResult.status, true, 'Unexpected claim rewards result')
 
-  console.log(`withdrawing LP for account ${kit1.web3.eth.defaultAccount}`)
+  console.log(`withdrawing LP for account ${walletAddress1}`)
   const user1withdrawResult = await withdraw(kit1, amount) // should pass
   assert.equal(user1withdrawResult.status, true, 'User 1 should be able to withdraw since they deposited already')
 }

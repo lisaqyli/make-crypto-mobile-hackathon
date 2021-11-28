@@ -72,12 +72,11 @@ export async function withdraw(kit: ContractKit, amount: string) {
   })
 }
 
-export async function claimRewards(kit: ContractKit) {
-  const farmBotContract = getFarmBotContract(kit)
+export async function claimRewards(farmBotContract: FarmBotContract, walletAddress: string) {
+  console.log(`claiming rewards`)
   const tenSecondsFromNowDeadline = new Date().getTime() + 10*1000
-  assert.ok(kit.web3.eth.defaultAccount)
   return farmBotContract.methods.claimRewards(tenSecondsFromNowDeadline).send({
-    from: kit.web3.eth.defaultAccount,
+    from: walletAddress,
     gas: 1076506,
     gasPrice: 1000000000,
   })

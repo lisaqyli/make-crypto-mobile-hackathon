@@ -1,4 +1,4 @@
-import {claimRewards, getKit} from "../src/farm-bot-api"
+import {claimRewards, getFarmBotContract, getKit} from "../src/farm-bot-api"
 import assert from "assert"
 
 /**
@@ -13,8 +13,11 @@ async function main(){
   const privateKey = process.env.ALFAJORES_WALLET_PRIVATE_KEY
   assert.ok(privateKey)
   const kit = await getKit(privateKey)
+  const walletAddress = kit.web3.eth.defaultAccount
+  assert.ok(walletAddress)
+  const farmBot = getFarmBotContract(kit)
 
-  const claimRewardsResult = await claimRewards(kit)
+  const claimRewardsResult = await claimRewards(farmBot, walletAddress)
   assert.ok(claimRewardsResult.status)
 }
 
