@@ -35,7 +35,7 @@ async function payoutValueInGWei(kit: ContractKit, farmBot: FarmBotContract, _wa
   const rewardsTokenAddress = await stakingRewards.methods.rewardsToken().call()
   const totalReward = await CELOGWeiValue(kit, rewardsTokenAddress, parseInt(earningsWei))
   const feeFraction = await getClaimRewardsFeeFraction(farmBot)
-  return feeFraction * totalReward
+  return Math.round(feeFraction * totalReward)
 }
 
 async function CELOGWeiValue(kit: ContractKit, tokenAddress: string, amountWei: number): Promise<number> {
@@ -120,7 +120,7 @@ async function main(){
     assert.ok(status)
     await saveGasCost(gasUsedGWei)
   } else {
-    console.log('Not enough unclaimed rewards to be worth the gas. Doing nothing.')
+    console.log(`Not enough unclaimed rewards to be worth the gas (reward: ${rewardGWei}, cost: ${costGWei}). Doing nothing.`)
   }
 }
 
