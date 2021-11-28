@@ -15,14 +15,19 @@ interface Transaction {
     from: string
     gas: number
     gasPrice: number
-  }) => {status: boolean}
+  }) => Promise<{status: boolean}>
 }
 
-interface FarmBotContract {
+interface Call<Params, Return> {
+  call: (callParams: Params) => Promise<Return>
+}
+
+export interface FarmBotContract {
   methods: {
     deposit: (amount: string) => Transaction
     withdraw: (amount: string) => Transaction
     claimRewards: (deadline: number) => Transaction
+    stakingRewards: () => Call<void, string>
   }
 }
 
@@ -80,4 +85,8 @@ export async function claimRewards(farmBotContract: FarmBotContract, walletAddre
     gas: 1076506,
     gasPrice: 1000000000,
   })
+}
+
+export function getStakingRewardsContractAddress(farmBotContract: FarmBotContract): Promise<string> {
+  return farmBotContract.methods.stakingRewards().call()
 }
