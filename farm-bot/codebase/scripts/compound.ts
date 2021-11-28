@@ -1,5 +1,21 @@
-import {claimRewards, getFarmBotContract, getKit} from "../src/farm-bot-api"
+import {
+  claimRewards,
+  FARM_BOT_ADDRESS_ALFAJORES,
+  FarmBotContract,
+  getFarmBotContract,
+  getKit,
+  getStakingRewardsContractAddress
+} from "../src/farm-bot-api"
 import assert from "assert"
+import {ContractKit} from "@celo/contractkit"
+const STAKING_REWARDS_ABI = require('../abis/staking-rewards.json')
+
+async function stakingTokenBalance(kit: ContractKit, farmBot: FarmBotContract, _walletAddress: string) {
+  const stakingRewardsContractAddress = await getStakingRewardsContractAddress(farmBot)
+  const stakingRewards = new kit.web3.eth.Contract(STAKING_REWARDS_ABI, stakingRewardsContractAddress)
+  const earnings = await stakingRewards.methods.earned(FARM_BOT_ADDRESS_ALFAJORES).call()
+  return parseInt(earnings)
+}
 
 /**
  * Claim and re-invest rewards for a farm bot contract.
@@ -17,8 +33,13 @@ async function main(){
   assert.ok(walletAddress)
   const farmBot = getFarmBotContract(kit)
 
-  const claimRewardsResult = await claimRewards(farmBot, walletAddress)
-  assert.ok(claimRewardsResult.status)
+  const balance = await stakingTokenBalance(kit, farmBot, walletAddress)
+  if (balance > 1) { // todo convert to cUSD and compare to configurable threshold value
+    const claimRewardsResult = await claimRewards(farmBot, walletAddress)
+    assert.ok(claimRewardsResult.status)
+  } else {
+    console.log('Not enough balance to claim. Doing nothing.')
+  }
 }
 
 main().catch(console.error)
