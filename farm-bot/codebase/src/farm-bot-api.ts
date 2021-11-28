@@ -10,13 +10,19 @@ const FORNO_ALFAJORES_URL = 'https://alfajores-forno.celo-testnet.org'
 const LP_TOKEN_ADDRESS = '0xe952fe9608a20f80f009a43AEB6F422750285638' // Celo-cUSD LP
 export const FARM_BOT_ADDRESS_ALFAJORES = '0x3B1E4f872a174a33F89711033Ec133748e92aCa0'
 
-
+interface Transaction {
+  send: (sendParams: {
+    from: string
+    gas: number
+    gasPrice: number
+  }) => {status: boolean}
+}
 
 interface FarmBotContract {
   methods: {
-    deposit: (amount: string) => any
-    withdraw: (amount: string) => any
-    claimRewards: (deadline: number) => any
+    deposit: (amount: string) => Transaction
+    withdraw: (amount: string) => Transaction
+    claimRewards: (deadline: number) => Transaction
   }
 }
 
