@@ -21,13 +21,13 @@ const CELO_ADDRESS_ALFAJORES = '0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9' // t
 const WEI_PER_GWEI = 10**9
 
 /**
- * Get the value of unclaimed farming rewards in cUSD
+ * Get the expected payout in Celo gwei
  *
  * @param kit
  * @param farmBot
  * @param _walletAddress
  */
-async function unclaimedRewardValueInCELOGWei(kit: ContractKit, farmBot: FarmBotContract, _walletAddress: string) {
+async function payoutValueInGWei(kit: ContractKit, farmBot: FarmBotContract, _walletAddress: string) {
   const stakingRewardsContractAddress = await getStakingRewardsContractAddress(farmBot)
   const stakingRewards = new kit.web3.eth.Contract(STAKING_REWARDS_ABI, stakingRewardsContractAddress)
   console.log(`Getting farm bot's earnings in StakingRewards contract`)
@@ -112,11 +112,11 @@ async function main(){
   assert.ok(walletAddress)
   const farmBot = getFarmBotContract(kit)
 
-  const rewardGWei = await unclaimedRewardValueInCELOGWei(kit, farmBot, walletAddress)
+  const rewardGWei = await payoutValueInGWei(kit, farmBot, walletAddress)
   // todo save gas cost to file and use as threshold for whether to claim rewards
   const costGWei = await getSavedGasCostGwei()
   if (rewardGWei > costGWei) {
-    const {status, gasUsed: gasUsedGWei} = await claimRewards(farmBot, walletAddress)
+    const {status, gasUsed: gasUsedGWei} = await claimRewards(farmBot, walletAddress, rewardGWei)
     assert.ok(status)
     await saveGasCost(gasUsedGWei)
   } else {
