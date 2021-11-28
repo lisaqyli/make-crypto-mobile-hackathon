@@ -28,6 +28,8 @@ export interface FarmBotContract {
     withdraw: (amount: string) => Transaction
     claimRewards: (deadline: number) => Transaction
     stakingRewards: () => Call<void, string>
+    feeNumerator: () => Call<void, string>
+    feeDenominator: () => Call<void, string>
   }
 }
 
@@ -89,4 +91,9 @@ export async function claimRewards(farmBotContract: FarmBotContract, walletAddre
 
 export function getStakingRewardsContractAddress(farmBotContract: FarmBotContract): Promise<string> {
   return farmBotContract.methods.stakingRewards().call()
+}
+
+export async function getClaimRewardsFeeFraction(farmBotContract: FarmBotContract): Promise<number> {
+  const [numerator, denominator] = await Promise.all([farmBotContract.methods.feeNumerator().call(), farmBotContract.methods.feeDenominator().call()])
+  return parseInt(numerator)/parseInt(denominator)
 }

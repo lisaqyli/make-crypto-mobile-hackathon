@@ -1,7 +1,7 @@
 import {
   claimRewards,
   FARM_BOT_ADDRESS_ALFAJORES,
-  FarmBotContract,
+  FarmBotContract, getClaimRewardsFeeFraction,
   getFarmBotContract,
   getKit,
   getStakingRewardsContractAddress
@@ -33,7 +33,9 @@ async function unclaimedRewardValueInCELOGWei(kit: ContractKit, farmBot: FarmBot
   console.log(`Getting farm bot's earnings in StakingRewards contract`)
   const earningsWei = await stakingRewards.methods.earned(FARM_BOT_ADDRESS_ALFAJORES).call()
   const rewardsTokenAddress = await stakingRewards.methods.rewardsToken().call()
-  return CELOGWeiValue(kit, rewardsTokenAddress, parseInt(earningsWei))
+  const totalReward = await CELOGWeiValue(kit, rewardsTokenAddress, parseInt(earningsWei))
+  const feeFraction = await getClaimRewardsFeeFraction(farmBot)
+  return feeFraction * totalReward
 }
 
 async function CELOGWeiValue(kit: ContractKit, tokenAddress: string, amountWei: number): Promise<number> {
@@ -118,7 +120,7 @@ async function main(){
     assert.ok(status)
     await saveGasCost(gasUsedGWei)
   } else {
-    console.log('Not enough balance to claim. Doing nothing.')
+    console.log('Not enough unclaimed rewards to be worth the gas. Doing nothing.')
   }
 }
 
